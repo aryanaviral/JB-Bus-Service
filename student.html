@@ -4,12 +4,17 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Student - JB Bus Service</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
     <link
         rel="stylesheet"
@@ -31,7 +36,7 @@
 
     <script type="module">
 
-        // Firebase
+        // ---------------- FIREBASE IMPORTS ----------------
 
         import {
             initializeApp
@@ -46,11 +51,12 @@
         } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
 
-        // Firebase configuration
+        // ---------------- FIREBASE CONFIG ----------------
 
         const firebaseConfig = {
 
-            apiKey: "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
+            apiKey:
+                "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
 
             authDomain:
                 "bus-tracker-5090b.firebaseapp.com",
@@ -72,11 +78,13 @@
         };
 
 
-        // Initialize Firebase
+        // ---------------- INITIALIZE FIREBASE ----------------
 
-        const app = initializeApp(firebaseConfig);
+        const app =
+            initializeApp(firebaseConfig);
 
-        const database = getDatabase(app);
+        const database =
+            getDatabase(app);
 
 
         // ---------------- MAP ----------------
@@ -98,18 +106,107 @@
         ).addTo(map);
 
 
-        // ---------------- BUS MARKER ----------------
+        // ---------------- LIVE BUS LOCATION ----------------
 
-        const busMarker = L.marker(
-            [17.493974, 78.315988]
-        ).addTo(map);
-
-        busMarker.bindPopup(
-            "<b>Bus Location</b>"
+        const busLocationRef = ref(
+            database,
+            "busLocation"
         );
 
 
-        // ---------------- YOUR CURRENT LOCATION ----------------
+        let busMarker = null;
+
+
+        // Custom bus emoji icon
+
+        const busIcon = L.divIcon({
+
+            className: "bus-icon",
+
+            html: `
+                <div style="
+                    font-size: 50px;
+                    line-height: 50px;
+                    text-align: center;
+                ">
+                    🚌
+                </div>
+            `,
+
+            iconSize: [60, 60],
+
+            iconAnchor: [30, 30],
+
+            popupAnchor: [0, -30]
+        });
+
+
+        // Listen for driver's live location
+
+        onValue(
+            busLocationRef,
+
+            function(snapshot) {
+
+                // No bus location yet
+
+                if (!snapshot.exists()) {
+                    return;
+                }
+
+
+                const location =
+                    snapshot.val();
+
+
+                const latitude =
+                    location.latitude;
+
+                const longitude =
+                    location.longitude;
+
+
+                // Create bus marker first time
+
+                if (busMarker === null) {
+
+                    busMarker = L.marker(
+                        [
+                            latitude,
+                            longitude
+                        ],
+                        {
+                            icon: busIcon,
+
+                            zIndexOffset: 1000
+                        }
+                    )
+                    .addTo(map)
+                    .bindPopup(
+                        "<b>🚌 JB Bus</b>"
+                    );
+
+                }
+
+
+                // Move existing bus marker
+
+                else {
+
+                    busMarker.setLatLng(
+                        [
+                            latitude,
+                            longitude
+                        ]
+                    );
+
+                }
+
+            }
+        );
+
+
+        // ---------------- STUDENT CURRENT LOCATION ----------------
 
         navigator.geolocation.getCurrentPosition(
 
@@ -122,18 +219,26 @@
                     position.coords.longitude;
 
 
-                L.marker(
-                    [latitude, longitude]
+                const userMarker = L.marker(
+                    [
+                        latitude,
+                        longitude
+                    ]
                 )
                 .addTo(map)
                 .bindPopup(
                     "<b>Your Location</b>"
-                )
-                .openPopup();
+                );
+
+
+                userMarker.openPopup();
 
 
                 map.setView(
-                    [latitude, longitude],
+                    [
+                        latitude,
+                        longitude
+                    ],
                     16
                 );
 
@@ -161,10 +266,7 @@
         );
 
 
-        // ---------------- FIREBASE STOP REQUESTS ----------------
-
-
-        // Reference to ALL stop requests
+        // ---------------- STOP REQUESTS ----------------
 
         const requestsRef = ref(
             database,
@@ -172,15 +274,14 @@
         );
 
 
-        // Get this device's unique ID
+        // ---------------- DEVICE ID ----------------
 
         let deviceId = localStorage.getItem(
             "busTrackerDeviceId"
         );
 
 
-        // If this device doesn't have an ID yet,
-        // create one
+        // Create a unique ID for this device
 
         if (!deviceId) {
 
@@ -194,7 +295,7 @@
         }
 
 
-        // This specific device's stop request
+        // This device can only have one request
 
         const myRequestRef = ref(
             database,
@@ -203,7 +304,6 @@
 
 
         // ---------------- REQUEST A STOP ----------------
-
 
         map.on(
             "click",
@@ -223,15 +323,12 @@
 
 
                 if (!confirmed) {
-
                     return;
-
                 }
 
 
-                // IMPORTANT:
-                // set() replaces this device's old request.
-                // It does NOT create unlimited requests.
+                // set() replaces the old request
+                // from this same device
 
                 set(
                     myRequestRef,
@@ -243,7 +340,6 @@
 
                         timestamp: Date.now()
                     }
-
                 )
 
                 .then(function() {
@@ -268,8 +364,7 @@
         );
 
 
-        // ---------------- SHOW ALL STOP REQUESTS ----------------
-
+        // ---------------- SHOW STOP REQUESTS ----------------
 
         onValue(
             requestsRef,
@@ -277,7 +372,7 @@
             function(snapshot) {
 
 
-                // Remove previously drawn request markers
+                // Remove old request markers
 
                 map.eachLayer(
                     function(layer) {
@@ -294,17 +389,14 @@
                 );
 
 
-                // If there are no requests,
-                // stop here
+                // No requests
 
                 if (!snapshot.exists()) {
-
                     return;
-
                 }
 
 
-                // Draw every active stop request
+                // Draw all active requests
 
                 snapshot.forEach(
                     function(childSnapshot) {
@@ -322,10 +414,10 @@
                         .addTo(map);
 
 
-                        // Label this marker so we can
-                        // remove it next time Firebase updates
+                        // Identify as stop marker
 
-                        marker.isStopRequestMarker = true;
+                        marker.isStopRequestMarker =
+                            true;
 
 
                         marker.bindPopup(
