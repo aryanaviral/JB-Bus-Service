@@ -32,3 +32,9 @@ const studentBtn = document.getElementById("studentBtn");
 studentBtn.addEventListener("click", function () {
     window.location.href = "student.html";
 });
+
+const operatorBtn = document.getElementById("operatorBtn");
+
+operatorBtn.addEventListener("click", function () {
+    window.location.href = "operator.html";
+});
