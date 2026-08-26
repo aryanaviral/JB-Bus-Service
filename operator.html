@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Driver - JB Bus Service</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+
+<body>
+
+    <h1>Driver Bus Tracking</h1>
+
+    <p id="status">
+        Bus tracking is currently stopped.
+    </p>
+
+    <button id="startTracking">
+        Start Bus Tracking
+    </button>
+
+    <div id="map"></div>
+
+
+    <script type="module">
+
+        // ---------------- FIREBASE IMPORTS ----------------
+
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+        import {
+            getDatabase,
+            ref,
+            set,
+            onValue,
+            remove
+        } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+
+        // ---------------- FIREBASE CONFIG ----------------
+
+        const firebaseConfig = {
+
+            apiKey: "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
+
+            authDomain:
+                "bus-tracker-5090b.firebaseapp.com",
+
+            databaseURL:
+                "https://bus-tracker-5090b-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+            projectId:
+                "bus-tracker-5090b",
+
+            storageBucket:
+                "bus-tracker-5090b.firebasestorage.app",
+
+            messagingSenderId:
+                "745348645444",
+
+            appId:
+                "1:745348645444:web:59a33a22d823496e513211"
+        };
+
+
+        // ---------------- INITIALIZE FIREBASE ----------------
+
+        const app = initializeApp(firebaseConfig);
+
+        const database = getDatabase(app);
+
+
+        // ---------------- FIREBASE REFERENCES ----------------
+
+        const busLocationRef = ref(
+            database,
+            "busLocation"
+        );
+
+
+        const requestsRef = ref(
+            database,
+            "stopRequests"
+        );
+
+
+        // ---------------- MAP ----------------
+
+        const map = L.map("map").setView(
+            [17.493974, 78.315988],
+            13
+        );
+
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+
+                attribution:
+                    "© OpenStreetMap contributors"
+            }
+        ).addTo(map);
+
+
+        // ---------------- BUS MARKER ----------------
+
+        let busMarker = null;
+
+
+        // ---------------- STOP REQUEST MARKERS ----------------
+
+        onValue(
+            requestsRef,
+
+            function(snapshot) {
+
+
+                // Remove old request markers
+
+                map.eachLayer(
+                    function(layer) {
+
+                        if (
+                            layer.isStopRequestMarker
+                        ) {
+
+                            map.removeLayer(layer);
+
+                        }
+
+                    }
+                );
+
+
+                // Draw active requests
+
+                snapshot.forEach(
+                    function(childSnapshot) {
+
+                        const request =
+                            childSnapshot.val();
+
+
+                        const requestId =
+                            childSnapshot.key;
+
+
+                        const marker = L.marker(
+                            [
+                                request.latitude,
+                                request.longitude
+                            ]
+                        )
+                        .addTo(map);
+
+
+                        marker.isStopRequestMarker = true;
+
+
+                        marker.bindPopup(
+                            "<b>Pickup requested</b><br>" +
+                            "Waiting for bus"
+                        );
+
+
+                        // Store Firebase ID on marker
+
+                        marker.requestId =
+                            requestId;
+
+                    }
+                );
+
+            }
+
+        );
+
+
+        // ---------------- START TRACKING ----------------
+
+        const startButton =
+            document.getElementById(
+                "startTracking"
+            );
+
+
+        const status =
+            document.getElementById(
+                "status"
+            );
+
+
+        startButton.addEventListener(
+            "click",
+
+            function() {
+
+
+                status.textContent =
+                    "Bus tracking started...";
+
+
+                navigator.geolocation.watchPosition(
+
+                    function(position) {
+
+
+                        const latitude =
+                            position.coords.latitude;
+
+
+                        const longitude =
+                            position.coords.longitude;
+
+
+                        console.log(
+                            "Bus location:",
+                            latitude,
+                            longitude
+                        );
+
+
+                        // ---------------- SAVE BUS LOCATION ----------------
+
+                        set(
+                            busLocationRef,
+
+                            {
+                                latitude: latitude,
+
+                                longitude: longitude,
+
+                                timestamp: Date.now()
+                            }
+
+                        );
+
+
+                        // ---------------- UPDATE BUS MARKER ----------------
+
+                        if (
+                            busMarker === null
+                        ) {
+
+                            busMarker = L.marker(
+                                [
+                                    latitude,
+                                    longitude
+                                ]
+                            )
+                            .addTo(map)
+                            .bindPopup(
+                                "<b>Bus</b>"
+                            );
+
+                        }
+
+                        else {
+
+                            busMarker.setLatLng(
+                                [
+                                    latitude,
+                                    longitude
+                                ]
+                            );
+
+                        }
+
+
+                        map.setView(
+                            [
+                                latitude,
+                                longitude
+                            ],
+                            16
+                        );
+
+
+                        // ---------------- CHECK STOP DISTANCES ----------------
+
+                        checkNearbyStops(
+                            latitude,
+                            longitude
+                        );
+
+
+                    },
+
+
+                    function(error) {
+
+                        console.error(
+                            "Location error:",
+                            error
+                        );
+
+
+                        status.textContent =
+                            "Could not get location.";
+
+                    },
+
+
+                    {
+                        enableHighAccuracy: true,
+
+                        maximumAge: 0,
+
+                        timeout: 30000
+                    }
+
+                );
+
+
+            }
+
+        );
+
+
+        // ---------------- DISTANCE CALCULATION ----------------
+
+
+        function calculateDistance(
+
+            lat1,
+            lon1,
+            lat2,
+            lon2
+
+        ) {
+
+
+            const R = 6371000;
+
+
+            const dLat =
+                (lat2 - lat1) *
+                Math.PI / 180;
+
+
+            const dLon =
+                (lon2 - lon1) *
+                Math.PI / 180;
+
+
+            const a =
+
+                Math.sin(
+                    dLat / 2
+                ) *
+
+                Math.sin(
+                    dLat / 2
+                ) +
+
+                Math.cos(
+                    lat1 *
+                    Math.PI / 180
+                ) *
+
+                Math.cos(
+                    lat2 *
+                    Math.PI / 180
+                ) *
+
+                Math.sin(
+                    dLon / 2
+                ) *
+
+                Math.sin(
+                    dLon / 2
+                );
+
+
+            const c =
+
+                2 *
+
+                Math.atan2(
+                    Math.sqrt(a),
+                    Math.sqrt(1 - a)
+                );
+
+
+            return R * c;
+
+        }
+
+
+        // ---------------- AUTO REMOVE NEARBY STOPS ----------------
+
+
+        function checkNearbyStops(
+            busLatitude,
+            busLongitude
+        ) {
+
+
+            onValue(
+                requestsRef,
+
+                function(snapshot) {
+
+
+                    snapshot.forEach(
+                        function(childSnapshot) {
+
+
+                            const request =
+                                childSnapshot.val();
+
+
+                            const requestId =
+                                childSnapshot.key;
+
+
+                            const distance =
+                                calculateDistance(
+
+                                    busLatitude,
+
+                                    busLongitude,
+
+                                    request.latitude,
+
+                                    request.longitude
+
+                                );
+
+
+                            console.log(
+                                "Distance to request:",
+                                distance
+                            );
+
+
+                            // 50 metres for prototype
+
+                            if (
+                                distance <= 50
+                            ) {
+
+
+                                console.log(
+                                    "Bus reached stop"
+                                );
+
+
+                                const requestToRemove =
+                                    ref(
+
+                                        database,
+
+                                        "stopRequests/" +
+                                        requestId
+
+                                    );
+
+
+                                remove(
+                                    requestToRemove
+                                );
+
+                            }
+
+                        }
+
+                    );
+
+
+                },
+
+
+                {
+                    onlyOnce: true
+                }
+
+            );
+
+        }
+
+    </script>
+
+</body>
+
+</html>

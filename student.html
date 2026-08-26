@@ -3,231 +3,345 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Student/Faculty - JB bus Service</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student - JB Bus Service</title>
 
     <link rel="stylesheet" href="style.css">
+
     <link
-         rel="stylesheet"
-         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
+
 <body>
+
     <h1>Student Bus Tracking</h1>
 
-    <p>Bus location will appear here.</p>
+    <p>Tap the map to request a bus stop.</p>
 
     <div id="map"></div>
 
+
     <script type="module">
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+        // Firebase
 
-    import {
-        getDatabase,
-        ref,
-        push,
-        set,
-        onValue
-    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 
 
-    // Firebase configuration
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
-        authDomain: "bus-tracker-5090b.firebaseapp.com",
-        databaseURL: "https://bus-tracker-5090b-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "bus-tracker-5090b",
-        storageBucket: "bus-tracker-5090b.firebasestorage.app",
-        messagingSenderId: "745348645444",
-        appId: "1:745348645444:web:59a33a22d823496e513211"
-    };
+        import {
+            getDatabase,
+            ref,
+            set,
+            onValue
+        } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
 
-    // Initialize Firebase
+        // Firebase configuration
 
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+        const firebaseConfig = {
 
+            apiKey: "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
 
-    // Map
+            authDomain:
+                "bus-tracker-5090b.firebaseapp.com",
 
-    const map = L.map('map').setView(
-        [17.493974, 78.315988],
-        13
-    );
+            databaseURL:
+                "https://bus-tracker-5090b-default-rtdb.asia-southeast1.firebasedatabase.app",
 
-    L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-            maxZoom: 19,
-            attribution: "© OpenStreetMap contributors"
-        }
-    ).addTo(map);
+            projectId:
+                "bus-tracker-5090b",
 
+            storageBucket:
+                "bus-tracker-5090b.firebasestorage.app",
 
-    // Bus marker
+            messagingSenderId:
+                "745348645444",
 
-    const busMarker = L.marker(
-        [17.493974, 78.315988]
-    ).addTo(map);
-
-    busMarker.bindPopup("<b>Bus Location</b>");
+            appId:
+                "1:745348645444:web:59a33a22d823496e513211"
+        };
 
 
-    // Get current location
+        // Initialize Firebase
 
-    navigator.geolocation.getCurrentPosition(
+        const app = initializeApp(firebaseConfig);
 
-        function(position) {
-
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-
-            L.marker([latitude, longitude])
-                .addTo(map)
-                .bindPopup("<b>Your Location</b>")
-                .openPopup();
-
-            map.setView(
-                [latitude, longitude],
-                16
-            );
-        },
-
-        function(error) {
-
-            console.error(
-                "Error getting location:",
-                error
-            );
-
-            console.log(
-                "Could not get current location"
-            );
-        },
-
-        {
-            enableHighAccuracy: false,
-            timeout: 30000,
-            maximumAge: 60000
-        }
-
-    );
+        const database = getDatabase(app);
 
 
-    // Stop requests location in Firebase
+        // ---------------- MAP ----------------
 
-    const requestRef = ref(
-        database,
-        'stopRequest'
-    );
-
-
-    // Click on map to request a stop
-
-    map.on("click", function(event) {
-
-        const latitude = event.latlng.lat;
-        const longitude = event.latlng.lng;
-
-        const confirmed = confirm(
-            "Request bus stop at this location?"
+        const map = L.map("map").setView(
+            [17.493974, 78.315988],
+            13
         );
 
-        if (!confirmed) {
-            return;
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+
+                attribution:
+                    "© OpenStreetMap contributors"
+            }
+        ).addTo(map);
+
+
+        // ---------------- BUS MARKER ----------------
+
+        const busMarker = L.marker(
+            [17.493974, 78.315988]
+        ).addTo(map);
+
+        busMarker.bindPopup(
+            "<b>Bus Location</b>"
+        );
+
+
+        // ---------------- YOUR CURRENT LOCATION ----------------
+
+        navigator.geolocation.getCurrentPosition(
+
+            function(position) {
+
+                const latitude =
+                    position.coords.latitude;
+
+                const longitude =
+                    position.coords.longitude;
+
+
+                L.marker(
+                    [latitude, longitude]
+                )
+                .addTo(map)
+                .bindPopup(
+                    "<b>Your Location</b>"
+                )
+                .openPopup();
+
+
+                map.setView(
+                    [latitude, longitude],
+                    16
+                );
+
+            },
+
+
+            function(error) {
+
+                console.error(
+                    "Error getting location:",
+                    error
+                );
+
+            },
+
+
+            {
+                enableHighAccuracy: false,
+
+                timeout: 30000,
+
+                maximumAge: 60000
+            }
+
+        );
+
+
+        // ---------------- FIREBASE STOP REQUESTS ----------------
+
+
+        // Reference to ALL stop requests
+
+        const requestsRef = ref(
+            database,
+            "stopRequests"
+        );
+
+
+        // Get this device's unique ID
+
+        let deviceId = localStorage.getItem(
+            "busTrackerDeviceId"
+        );
+
+
+        // If this device doesn't have an ID yet,
+        // create one
+
+        if (!deviceId) {
+
+            deviceId = crypto.randomUUID();
+
+            localStorage.setItem(
+                "busTrackerDeviceId",
+                deviceId
+            );
+
         }
 
 
-        // Create unique Firebase entry
+        // This specific device's stop request
 
-        const newRequestRef = push(requestRef);
-
-
-        // Save location
-
-        set(newRequestRef, {
-
-            latitude: latitude,
-            longitude: longitude,
-            timestamp: Date.now()
-
-        })
-        .then(function() {
-
-            alert(
-                "Bus stop saved successfully!"
-            );
-
-        })
-        .catch(function(error) {
-
-            console.error(
-                "Error saving request:",
-                error
-            );
-
-        });
-
-    });
+        const myRequestRef = ref(
+            database,
+            "stopRequests/" + deviceId
+        );
 
 
-    // Listen for stop requests
-
-    onValue(requestRef, function(snapshot) {
+        // ---------------- REQUEST A STOP ----------------
 
 
-        // Remove old stop request markers
+        map.on(
+            "click",
 
-        map.eachLayer(function(layer) {
+            function(event) {
 
-            if (layer.isStopRequestMarker) {
+                const latitude =
+                    event.latlng.lat;
 
-                map.removeLayer(layer);
+                const longitude =
+                    event.latlng.lng;
+
+
+                const confirmed = confirm(
+                    "Request bus stop at this location?"
+                );
+
+
+                if (!confirmed) {
+
+                    return;
+
+                }
+
+
+                // IMPORTANT:
+                // set() replaces this device's old request.
+                // It does NOT create unlimited requests.
+
+                set(
+                    myRequestRef,
+
+                    {
+                        latitude: latitude,
+
+                        longitude: longitude,
+
+                        timestamp: Date.now()
+                    }
+
+                )
+
+                .then(function() {
+
+                    alert(
+                        "Bus stop saved successfully!"
+                    );
+
+                })
+
+                .catch(function(error) {
+
+                    console.error(
+                        "Error saving request:",
+                        error
+                    );
+
+                });
 
             }
 
-        });
+        );
 
 
-        // Add all saved stop requests
-
-        snapshot.forEach(function(childSnapshot) {
-
-            const request = childSnapshot.val();
+        // ---------------- SHOW ALL STOP REQUESTS ----------------
 
 
-            const marker = L.marker(
-                [
-                    request.latitude,
-                    request.longitude
-                ]
-            ).addTo(map);
+        onValue(
+            requestsRef,
+
+            function(snapshot) {
 
 
-            // Mark this as a stop request marker
+                // Remove previously drawn request markers
 
-            marker.isStopRequestMarker = true;
+                map.eachLayer(
+                    function(layer) {
+
+                        if (
+                            layer.isStopRequestMarker
+                        ) {
+
+                            map.removeLayer(layer);
+
+                        }
+
+                    }
+                );
 
 
-            marker.bindPopup(
-                "<b>Bus stop requested here</b><br>" +
-                "Waiting for bus..."
-            );
+                // If there are no requests,
+                // stop here
 
-        });
+                if (!snapshot.exists()) {
 
-    });
+                    return;
 
-</script>
+                }
+
+
+                // Draw every active stop request
+
+                snapshot.forEach(
+                    function(childSnapshot) {
+
+                        const request =
+                            childSnapshot.val();
+
+
+                        const marker = L.marker(
+                            [
+                                request.latitude,
+                                request.longitude
+                            ]
+                        )
+                        .addTo(map);
+
+
+                        // Label this marker so we can
+                        // remove it next time Firebase updates
+
+                        marker.isStopRequestMarker = true;
+
+
+                        marker.bindPopup(
+                            "<b>Bus stop requested here</b><br>" +
+                            "Waiting for bus..."
+                        );
+
+                    }
+                );
+
+            }
+
+        );
+
+    </script>
 
 </body>
 
 </html>
-
