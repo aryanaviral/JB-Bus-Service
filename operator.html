@@ -116,9 +116,8 @@
                 </div>
             `,
 
-            iconSize: [80, 80],
-            iconAnchor: [40, 40],
-            popupAnchor: [0, 0]
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
         });
 
 
@@ -155,7 +154,10 @@
                         [
                             request.latitude,
                             request.longitude
-                        ]
+                        ],
+                        {
+                            icon: busIcon
+                        }
                     ).addTo(map);
 
 
