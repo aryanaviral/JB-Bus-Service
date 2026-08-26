@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student/Faculty - JB bus Service</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link
+         rel="stylesheet"
+         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+    <h1>Student Bus Tracking</h1>
+
+    <p>Bus location will appear here.</p>
+
+    <div id="map"></div>
+
+    <script>
+        const map = L.map('map').setView([17.493974, 78.315988], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap contributors"
+        }).addTo(map);
+
+        const busMarker = L.marker([17.493974, 78.315988]).addTo(map);
+
+        busMarker.bindPopup("<b>Bus Location</b>").openPopup();
+
+        console.log("About to request location...");
+
+        navigator.geolocation.getCurrentPosition(
+             function(position) {
+             console.log("SUCCESS!");
+
+             const latitude = position.coords.latitude;
+             const longitude = position.coords.longitude;
+
+            console.log("Latitude:", latitude);
+            console.log("Longitude:", longitude);
+
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup("You are here!")
+                .openPopup();
+
+            map.setView([latitude, longitude], 16);
+        },
+
+        function(error) {
+            console.error("Error getting location:", error);
+
+            // TEMPORARY fallback location
+            const latitude = 17.493974;
+            const longitude = 78.315988;
+
+            console.log("Using fallback location");
+
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup("Fallback location: Hyderabad")
+                .openPopup();
+
+            map.setView([latitude, longitude], 13);
+        },
+
+        {
+            enableHighAccuracy: false,
+            timeout: 30000,
+            maximumAge: 60000
+        }
+);
+    </script>
+
+</body>
+
+</html>
+
