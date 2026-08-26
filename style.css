@@ -39,3 +39,8 @@ main {
     width: 400px;
     background: lightgray;
 }
+
+.bus-icon {
+    background: transparent;
+    border: none;
+}
