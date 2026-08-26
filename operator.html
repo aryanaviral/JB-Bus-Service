@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Driver - JB Bus Service</title>
 
@@ -18,7 +19,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-
 
 <body>
 
@@ -56,7 +56,6 @@
         // ---------------- FIREBASE CONFIG ----------------
 
         const firebaseConfig = {
-
             apiKey: "AIzaSyDLb1F3P0LX4atIF7MTQgF1nECX4rSqtV0",
 
             authDomain:
@@ -93,7 +92,6 @@
             "busLocation"
         );
 
-
         const requestsRef = ref(
             database,
             "stopRequests"
@@ -106,7 +104,6 @@
             [17.493974, 78.315988],
             13
         );
-
 
         L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -131,65 +128,54 @@
 
             function(snapshot) {
 
-
                 // Remove old request markers
 
-                map.eachLayer(
-                    function(layer) {
+                map.eachLayer(function(layer) {
 
-                        if (
-                            layer.isStopRequestMarker
-                        ) {
-
-                            map.removeLayer(layer);
-
-                        }
-
+                    if (layer.isStopRequestMarker) {
+                        map.removeLayer(layer);
                     }
-                );
+
+                });
 
 
                 // Draw active requests
 
-                snapshot.forEach(
-                    function(childSnapshot) {
+                snapshot.forEach(function(childSnapshot) {
 
-                        const request =
-                            childSnapshot.val();
+                    const request =
+                        childSnapshot.val();
 
-
-                        const requestId =
-                            childSnapshot.key;
+                    const requestId =
+                        childSnapshot.key;
 
 
-                        const marker = L.marker(
-                            [
-                                request.latitude,
-                                request.longitude
-                            ]
-                        )
-                        .addTo(map);
+                    const marker = L.marker(
+                        [
+                            request.latitude,
+                            request.longitude
+                        ]
+                    ).addTo(map);
 
 
-                        marker.isStopRequestMarker = true;
+                    // Identify this marker
+
+                    marker.isStopRequestMarker = true;
 
 
-                        marker.bindPopup(
-                            "<b>Pickup requested</b><br>" +
-                            "Waiting for bus"
-                        );
+                    // Store Firebase request ID
+
+                    marker.requestId = requestId;
 
 
-                        // Store Firebase ID on marker
+                    marker.bindPopup(
+                        "<b>Pickup requested</b><br>" +
+                        "Waiting for bus"
+                    );
 
-                        marker.requestId =
-                            requestId;
-
-                    }
-                );
+                });
 
             }
-
         );
 
 
@@ -199,7 +185,6 @@
             document.getElementById(
                 "startTracking"
             );
-
 
         const status =
             document.getElementById(
@@ -212,19 +197,18 @@
 
             function() {
 
-
                 status.textContent =
                     "Bus tracking started...";
 
 
                 navigator.geolocation.watchPosition(
 
-                    function(position) {
+                    // ---------------- LOCATION SUCCESS ----------------
 
+                    function(position) {
 
                         const latitude =
                             position.coords.latitude;
-
 
                         const longitude =
                             position.coords.longitude;
@@ -249,30 +233,41 @@
 
                                 timestamp: Date.now()
                             }
-
                         );
 
 
                         // ---------------- UPDATE BUS MARKER ----------------
 
-                        if (
-                            busMarker === null
-                        ) {
+                        if (busMarker === null) {
+
+                            const busIcon = L.divIcon({
+                                className: "bus-icon",
+
+                                html: "🚌",
+
+                                iconSize: [40, 40],
+
+                                iconAnchor: [20, 20],
+
+                                popupAnchor: [0, -20]
+                            });
+
 
                             busMarker = L.marker(
                                 [
                                     latitude,
                                     longitude
-                                ]
+                                ],
+                                {
+                                    icon: busIcon
+                                }
                             )
-                            .addTo(map)
-                            .bindPopup(
-                                "<b>Bus</b>"
-                            );
+                                .addTo(map)
+                                .bindPopup(
+                                    "<b>Bus Location</b>"
+                                );
 
-                        }
-
-                        else {
+                        } else {
 
                             busMarker.setLatLng(
                                 [
@@ -283,6 +278,8 @@
 
                         }
 
+
+                        // Move map with bus
 
                         map.setView(
                             [
@@ -300,9 +297,10 @@
                             longitude
                         );
 
-
                     },
 
+
+                    // ---------------- LOCATION ERROR ----------------
 
                     function(error) {
 
@@ -311,12 +309,13 @@
                             error
                         );
 
-
                         status.textContent =
                             "Could not get location.";
 
                     },
 
+
+                    // ---------------- LOCATION SETTINGS ----------------
 
                     {
                         enableHighAccuracy: true,
@@ -328,24 +327,18 @@
 
                 );
 
-
             }
-
         );
 
 
         // ---------------- DISTANCE CALCULATION ----------------
 
-
         function calculateDistance(
-
             lat1,
             lon1,
             lat2,
             lon2
-
         ) {
-
 
             const R = 6371000;
 
@@ -361,38 +354,23 @@
 
 
             const a =
-
-                Math.sin(
-                    dLat / 2
-                ) *
-
-                Math.sin(
-                    dLat / 2
-                ) +
+                Math.sin(dLat / 2) *
+                Math.sin(dLat / 2) +
 
                 Math.cos(
-                    lat1 *
-                    Math.PI / 180
+                    lat1 * Math.PI / 180
                 ) *
 
                 Math.cos(
-                    lat2 *
-                    Math.PI / 180
+                    lat2 * Math.PI / 180
                 ) *
 
-                Math.sin(
-                    dLon / 2
-                ) *
-
-                Math.sin(
-                    dLon / 2
-                );
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
 
 
             const c =
-
                 2 *
-
                 Math.atan2(
                     Math.sqrt(a),
                     Math.sqrt(1 - a)
@@ -406,26 +384,21 @@
 
         // ---------------- AUTO REMOVE NEARBY STOPS ----------------
 
-
         function checkNearbyStops(
             busLatitude,
             busLongitude
         ) {
-
 
             onValue(
                 requestsRef,
 
                 function(snapshot) {
 
-
                     snapshot.forEach(
                         function(childSnapshot) {
 
-
                             const request =
                                 childSnapshot.val();
-
 
                             const requestId =
                                 childSnapshot.key;
@@ -451,12 +424,9 @@
                             );
 
 
-                            // 50 metres for prototype
+                            // 50 metres for prototype/demo
 
-                            if (
-                                distance <= 50
-                            ) {
-
+                            if (distance <= 50) {
 
                                 console.log(
                                     "Bus reached stop"
@@ -481,12 +451,9 @@
                             }
 
                         }
-
                     );
 
-
                 },
-
 
                 {
                     onlyOnce: true
@@ -499,5 +466,4 @@
     </script>
 
 </body>
-
 </html>
